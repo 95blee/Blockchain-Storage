@@ -32,12 +32,22 @@ class Miner:
 
     None of the miner methods should be invoked directly.
     """
-    def __init__(self, num_txs=None):
+    def __init__(self, num_txs=None, block_cap=1000000, num_stored=1000,
+                 post_cap_interval=10):
         self.transactions = []
         self.running_threads = []
         # Synchronisation for block creation and list of running threads
         self.create_sync_vars()
         self.blocks_created = 0
+        # How many blocks can be reached before using a fixed cleaning interval
+        # This can be set to zero or one to always use a fixed cleaning interval
+        self.block_cap = block_cap
+        # How many block hashes to store when using a fixed cleaning interval
+        # More blocks = longer fixed cleaning interval but higher possibility
+        # of remove succeeding
+        self.n_blocks_stored = num_stored
+        # The fixed cleaning interval in seconds when using a fixed interval
+        self.interval_after_cap = post_cap_interval
         try:
             # Try to open an existing database first
             self.db = plyvel.DB("/home/ben/mof-bc")
@@ -119,17 +129,8 @@ class Miner:
         self.to_summarise = {}
         # Store the remove and summarise transactions received from nodes
         self.user_txs = [[], []]
-        # How many blocks can be reached before using a fixed cleaning interval
-        # This can be set to zero or one to always use a fixed cleaning interval
-        self.block_cap = 100000
-        # How many block hashes to store when using a fixed cleaning interval
-        # More blocks = longer fixed cleaning interval but higher possibility
-        # of remove succeeding
-        self.n_blocks_stored = 1000
         # A list of the last n_blocks_stored block hashes
         self.last_n_blocks = []
-        # The fixed cleaning interval in seconds when using a fixed interval
-        self.interval_after_cap = 10
 
     def start_socket(self):
         """Start the socket that will listen for new connections"""
